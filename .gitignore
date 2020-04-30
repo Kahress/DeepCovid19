@@ -124,3 +124,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 chest_xray/
+pickle_files/
