@@ -1,6 +1,7 @@
 import sys
 import os
 from PIL import Image
+from PIL import ImageStat
 import numpy as np
 import pickle
 
@@ -128,10 +129,127 @@ def crop_to_size(image, size):
     return image.crop((left_side, top_side, right_side, bottom_side))
 
 ############################
-### Resizing + Cropping ####
+######### Excesses #########
 ############################
 
+def crop_excess(image, size):
+    im_w, im_h = image.size
+    w, h = size
+    wth_ratio = w / h
+    image_ratio = im_w / im_h
+
+    if image_ratio > wth_ratio:
+        # Width cropping
+        crop = (im_w - im_h*wth_ratio) / 2
+        left_side = crop
+        right_side = im_w - crop
+        top_side = 0
+        bottom_side = im_h
+    else:
+        # Heigth cropping or none
+        crop = (im_h - (im_w / wth_ratio)) / 2
+        left_side = 0
+        right_side = im_w
+        top_side = crop
+        bottom_side = im_h - crop
+
+    return image.crop((left_side, top_side, right_side, bottom_side))
+
+def pad_excess(image, size):
+    im_w, im_h = image.size
+    w, h = size
+    wth_ratio = w / h
+    image_ratio = im_w / im_h
+
+    if image_ratio > wth_ratio:
+        # Width cropping
+        crop = ((im_w / wth_ratio) - im_h) / 2
+        left_side = 0
+        right_side = im_w
+        top_side = - crop
+        bottom_side = im_h + crop
+    else:
+        # Heigth cropping or none
+        crop = (im_h*wth_ratio - im_w) / 2
+        left_side = - crop
+        right_side = im_w + crop
+        top_side = 0
+        bottom_side = im_h
+
+    return image.crop((left_side, top_side, right_side, bottom_side))
+
+
+############################
+##### Paper approaches #####
+############################
+
+############################
+######## Approach 1 ########
+############################
+
+def App1(image):
+    size = (1920, 1080)
+    image.show()
+
+    print('Cropping excess')
+    image = crop_excess(image, size)
+    image.show()
+
+    print('Resizing')
+    image = image.resize(size, Image.BILINEAR)
+    image.show()
+
+    return image
+
+############################
+######## Approach 2 ########
+############################
+
+def App2(image):
+    print('Computing size')
+    min_gen, max_gen, avg_gen = compute_sizes()
+    size = max_gen
+
+    print('Cropping to largest')
+    image = crop_to_size(image, size)
+    image.show()
+
+    return image
+
+############################
+##### Common Approach ######
+############################
+
+def OTSU(image, threshold):
+    return image.point(lambda p: p > threshold and p)
+
+def Normalization(image):
+    stats = ImageStat.Stat(image)
+    std = stats.stddev[0]
+
+    return image.point(lambda p: p / std)
+
+def CommonApp(image):
+    image = OTSU(image, 100)
+    image.show()
+    image = Normalization(image)
+
+    return image
+
+
 if __name__ == "__main__":
+
+    debug = True
+
+    if debug:
+
+        for dirpath, dirnames, files in os.walk(dataset_path + 'train'):
+            for f in files:
+                with Image.open(dirpath + "\\" + f, 'r') as image:
+                    image = App1(image)
+                break
+        exit()
+
     print("Computing sizes...")
     min_gen, max_gen, avg_gen = compute_sizes()
 
