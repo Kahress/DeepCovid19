@@ -71,6 +71,8 @@ def load_images(path, transformation, size):
                 image = transformation(image, size)
                 list_pneumonia.append(np.array(image))
 
+    #print(list_pneumonia[16].shape)
+    #print(len(find(list_pneumonia, (lambda p: len(p.shape) > 2))))
     X = np.concatenate((np.array(list_normal), np.array(list_pneumonia)))
 
     y = np.concatenate((np.zeros(len(list_normal), dtype=int), np.ones(len(list_pneumonia), dtype=int)))
@@ -79,6 +81,14 @@ def load_images(path, transformation, size):
     Y[y, np.arange(y.size)] = 1
 
     return X, y, Y
+
+def find_all(list_items, function):
+    results = []
+    for index, item in enumerate(list_items):
+        if function(item):
+            results.append(index, item)
+
+    return results
 
 def create_dataset(transformation = (lambda x, y: x), size = (0,0)) :
 
@@ -104,7 +114,7 @@ def create_dataset(transformation = (lambda x, y: x), size = (0,0)) :
 
 def store_object(obj, filename):
     with open(filename, 'wb') as f:
-        pickle.dump(obj, f)
+        pickle.dump(obj, f, protocol=4)
 
 ############################
 ######### Resizing #########
@@ -187,17 +197,10 @@ def pad_excess(image, size):
 ######## Approach 1 ########
 ############################
 
-def App1(image):
-    size = (1920, 1080)
-    image.show()
-
-    print('Cropping excess')
+def App1(image, size):
     image = crop_excess(image, size)
-    image.show()
-
-    print('Resizing')
     image = image.resize(size, Image.BILINEAR)
-    image.show()
+    image = image.convert(mode='L')
 
     return image
 
@@ -239,21 +242,22 @@ def CommonApp(image):
 
 if __name__ == "__main__":
 
-    debug = True
+    debug = False
 
     if debug:
 
         for dirpath, dirnames, files in os.walk(dataset_path + 'train'):
             for f in files:
                 with Image.open(dirpath + "\\" + f, 'r') as image:
-                    image = App1(image)
+                    image = OTSU(image, 50)
+                    image.show()
                 break
-        exit()
 
     print("Computing sizes...")
     min_gen, max_gen, avg_gen = compute_sizes()
 
     print("Creating dataset...")
-    dataset = create_dataset()
+    dataset = create_dataset(transformation=App1, size=avg_gen)
+    #dataset = create_dataset()
 
     store_object(dataset, "dataset.p")
