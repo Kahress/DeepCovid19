@@ -4,6 +4,8 @@ from PIL import Image
 from PIL import ImageStat
 import numpy as np
 import pickle
+from progress.bar import ChargingBar
+
 
 dataset_path = '.\\chest_xray\\'
 
@@ -21,6 +23,26 @@ new_image.show()
 # 2. To largest size
 # 3. To average size
 # 4. To constant values (w, h)
+
+def create_progress_bar(path):
+    nSamples = 0
+    text = ''
+    if 'train' in path:
+        nSamples = 5216
+        text = 'train'
+
+    elif 'val' in path:
+        nSamples = 16
+        text = 'validation'
+
+    elif 'test' in path:
+        nSamples = 624
+        text = 'test'
+
+    bar = ChargingBar('Loading ' + text + ':', max=nSamples)
+
+    return bar
+
 
 def compute_sizes():
     num_img = 0
@@ -59,24 +81,32 @@ def load_images(path, transformation, size):
     list_normal = []
     list_pneumonia = []
 
+    bar = create_progress_bar(path)
+
     for dirpath, _, files in os.walk(path + '\\NORMAL'):
         for f in files:
             with Image.open(dirpath + "\\" + f, 'r') as image:
                 image = transformation(image, size)
                 list_normal.append(np.array(image))
+            bar.next()
          
     for dirpath, _, files in os.walk(path + '\\PNEUMONIA'):
         for f in files:
             with Image.open(dirpath + "\\" + f, 'r') as image:
                 image = transformation(image, size)
                 list_pneumonia.append(np.array(image))
+            bar.next()
 
-    #print(list_pneumonia[16].shape)
-    #print(len(find(list_pneumonia, (lambda p: len(p.shape) > 2))))
+    bar.finish()
+
+    # Samples
     X = np.concatenate((np.array(list_normal), np.array(list_pneumonia)))
+    X = np.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1))
 
+    # Labeled
     y = np.concatenate((np.zeros(len(list_normal), dtype=int), np.ones(len(list_pneumonia), dtype=int)))
 
+    # One hot vectors
     Y = np.zeros((2, y.size))
     Y[y, np.arange(y.size)] = 1
 

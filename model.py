@@ -4,9 +4,7 @@ import keras
 from keras.models import Sequential, Model
 from keras.layers import Dense, Conv2D, MaxPooling2D, Input, Flatten, Lambda
 from keras import backend as K
-from keras.optimizers import Adagrad
-from keras.metrics import accuracy
-from keras.losses import categorical_crossentropy
+import tensorflow as tf
 
 
 from PIL import Image
@@ -61,10 +59,7 @@ def get_conv_model(input_shape):
     """
         Model architecture
     """
-
-    # Define the tensors for the input image
-    input_layer = Input(input_shape)
-    
+  
     # Convolutional Neural Network
     model = Sequential()
     model.add(Conv2D(64, (10,10), activation='relu', input_shape=input_shape))
@@ -83,21 +78,33 @@ def get_conv_model(input_shape):
 
 
 if __name__ == "__main__":
-    import os
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    # import os
+    # Oos.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 
     print("Despickleando...")
     dataset = get_data("pickle_files/transformation_avg_dataset.p")
     print("Despickleado")
     train = dataset["train"]
-    X_train = train["X"]
-    x0 = X_train[0]
+    val = dataset["val"]
+    test = dataset["test"]
 
-    Y_train = train["Y"]
+    X_train = train["X"]
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], X_train.shape[2], 1))
+    Y_train = train["Y"].T
+
+    X_val = val["X"]
+    X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], X_val.shape[2], 1))
+    Y_val = val["Y"].T
+
+    X_test = test["X"]
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], X_test.shape[2], 1))
+    Y_test = test["Y"].T
     
     model = get_conv_model((X_train.shape[1], X_train.shape[2], 1))
-    model.compile(Adagrad(), loss=categorical_crossentropy, metrics=[accuracy])
+    model.compile(optimizer='adagrad', loss='categorical_crossentropy', metrics=['accuracy'])
     print(model.summary())
-    #model.fit()
+    epochs = 2
+    batch_size = 64
+    model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size)
