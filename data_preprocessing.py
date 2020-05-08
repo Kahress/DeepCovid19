@@ -7,10 +7,10 @@ import pickle
 from progress.bar import ChargingBar
 
 
-dataset_path = '.\\chest_xray\\'
+dataset_path = './chest_xray/'
 
 '''
-with Image.open('.\\chest_xray\\train\\NORMAL\\IM-0115-0001.jpeg', 'r') as image:
+with Image.open('./chest_xray/train/NORMAL/IM-0115-0001.jpeg', 'r') as image:
     new_image = image.resize(min_gen)
 
 image.show()
@@ -54,7 +54,7 @@ def compute_sizes():
     
     for dirpath, dirnames, files in os.walk(dataset_path + 'train'):
         for f in files:
-            with Image.open(dirpath + "\\" + f, 'r') as image:
+            with Image.open(dirpath + "/" + f, 'r') as image:
                 num_img += 1
                 w, h = image.size
 
@@ -78,29 +78,40 @@ def compute_sizes():
     return min_size, max_size, avg_size
 
 def load_images(path, transformation, size):
-    list_normal = []
-    list_pneumonia = []
+    # list_normal = []
+    Xn = 0
+    #list_pneumonia = []
+    Xp = 0
 
     bar = create_progress_bar(path)
 
-    for dirpath, _, files in os.walk(path + '\\NORMAL'):
+    for dirpath, _, files in os.walk(path + '/NORMAL'):
         for f in files:
-            with Image.open(dirpath + "\\" + f, 'r') as image:
+            with Image.open(dirpath + "/" + f, 'r') as image:
                 image = transformation(image, size)
-                list_normal.append(np.array(image))
+                if Xn = 0:
+                    Xn = image
+                else:
+                    Xn = np.concatenate((Xn,image))
+                #list_normal.append(np.array(image))
             bar.next()
          
-    for dirpath, _, files in os.walk(path + '\\PNEUMONIA'):
+    for dirpath, _, files in os.walk(path + '/PNEUMONIA'):
         for f in files:
-            with Image.open(dirpath + "\\" + f, 'r') as image:
+            with Image.open(dirpath + "/" + f, 'r') as image:
                 image = transformation(image, size)
+                if Xp = 0:
+                    Xp = image
+                else:
+                    Xp = np.concatenate((Xp,image))
                 list_pneumonia.append(np.array(image))
             bar.next()
 
     bar.finish()
 
     # Samples
-    X = np.concatenate((np.array(list_normal), np.array(list_pneumonia)))
+    # X = np.concatenate((np.array(list_normal), np.array(list_pneumonia)))
+    X = np.concatenate((Xn, Xp))
     X = np.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1))
 
     # Labeled
@@ -278,7 +289,7 @@ if __name__ == "__main__":
 
         for dirpath, dirnames, files in os.walk(dataset_path + 'train'):
             for f in files:
-                with Image.open(dirpath + "\\" + f, 'r') as image:
+                with Image.open(dirpath + "/" + f, 'r') as image:
                     image = OTSU(image, 50)
                     image.show()
                 break
