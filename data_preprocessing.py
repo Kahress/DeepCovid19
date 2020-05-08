@@ -79,9 +79,11 @@ def compute_sizes():
 
 def load_images(path, transformation, size):
     # list_normal = []
-    Xn = 0
+    Xn = None
     #list_pneumonia = []
-    Xp = 0
+    Xp = None
+    
+    initialized = False
 
     bar = create_progress_bar(path)
 
@@ -89,19 +91,23 @@ def load_images(path, transformation, size):
         for f in files:
             with Image.open(dirpath + "/" + f, 'r') as image:
                 image = transformation(image, size)
-                if Xn = 0:
+                if not initialized:
                     Xn = image
+                    initialized = True
                 else:
                     Xn = np.concatenate((Xn,image))
                 #list_normal.append(np.array(image))
             bar.next()
          
+    initialized = False
+
     for dirpath, _, files in os.walk(path + '/PNEUMONIA'):
         for f in files:
             with Image.open(dirpath + "/" + f, 'r') as image:
                 image = transformation(image, size)
-                if Xp = 0:
+                if not initialized:
                     Xp = image
+                    initialized = True
                 else:
                     Xp = np.concatenate((Xp,image))
                 list_pneumonia.append(np.array(image))
