@@ -78,50 +78,34 @@ def compute_sizes():
     return min_size, max_size, avg_size
 
 def load_images(path, transformation, size):
-    # list_normal = []
-    Xn = None
-    #list_pneumonia = []
-    Xp = None
+    list_images = []
     
-    initialized = False
-
     bar = create_progress_bar(path)
 
     for dirpath, _, files in os.walk(path + '/NORMAL'):
         for f in files:
             with Image.open(dirpath + "/" + f, 'r') as image:
                 image = transformation(image, size)
-                if not initialized:
-                    Xn = image
-                    initialized = True
-                else:
-                    Xn = np.concatenate((Xn,image))
-                #list_normal.append(np.array(image))
+                list_images.append(np.array(image))
             bar.next()
-         
-    initialized = False
+
+    n_normal = len(list_images)
 
     for dirpath, _, files in os.walk(path + '/PNEUMONIA'):
         for f in files:
             with Image.open(dirpath + "/" + f, 'r') as image:
                 image = transformation(image, size)
-                if not initialized:
-                    Xp = image
-                    initialized = True
-                else:
-                    Xp = np.concatenate((Xp,image))
-                list_pneumonia.append(np.array(image))
+                list_images.append(np.array(image))
             bar.next()
-
+    n_pneumonia = len(list_images) - n_normal
     bar.finish()
 
     # Samples
-    # X = np.concatenate((np.array(list_normal), np.array(list_pneumonia)))
-    X = np.concatenate((Xn, Xp))
+    X = np.array(list_images)
     X = np.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1))
 
     # Labeled
-    y = np.concatenate((np.zeros(len(list_normal), dtype=int), np.ones(len(list_pneumonia), dtype=int)))
+    y = np.concatenate((np.zeros(n_normal, dtype=int), np.ones(n_pneumonia, dtype=int)))
 
     # One hot vectors
     Y = np.zeros((2, y.size))
@@ -307,4 +291,4 @@ if __name__ == "__main__":
     dataset = create_dataset(transformation=App1, size=avg_gen)
     #dataset = create_dataset()
 
-    store_object(dataset, "dataset.p")
+    store_object(dataset, "dataset_app1.p")
