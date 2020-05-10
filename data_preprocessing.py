@@ -130,18 +130,20 @@ def create_dataset(transformation = (lambda x, y: x), size = (0,0)) :
     print("Loading train...")
     X, y, Y = load_images(train_path, transformation, size)
     train = {'X': X, 'y': y, 'Y': Y}
+    store_object(train, "train_app1.p")
+    del train
 
     print("Loading validation...")
     X, y, Y = load_images(val_path, transformation, size)
     val = {'X': X, 'y': y, 'Y': Y}
+    store_object(val, "val_app1.p")
+    del val
 
     print("Loading test...")
     X, y, Y = load_images(test_path, transformation, size)
     test = {'X': X, 'y': y, 'Y': Y}
-    
-    dataset = {'train': train, 'val': val, 'test': test}
-
-    return dataset
+    store_object(test, "test_app1.p")
+    del test
 
 def store_object(obj, filename):
     with open(filename, 'wb') as f:
@@ -288,7 +290,7 @@ if __name__ == "__main__":
     min_gen, max_gen, avg_gen = compute_sizes()
 
     print("Creating dataset...")
-    dataset = create_dataset(transformation=App1, size=avg_gen)
+    create_dataset(transformation=App1, size=avg_gen)
     #dataset = create_dataset()
 
-    store_object(dataset, "dataset_app1.p")
+    #store_object(dataset, "dataset_app1.p")

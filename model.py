@@ -84,11 +84,10 @@ if __name__ == "__main__":
 
 
     print("Despickleando...")
-    dataset = get_data("pickle_files/transformation_avg_dataset.p")
+    train = get_data("train_app1.p")
+    val = get_data("val_app1.p")
+    test = get_data("test_app1.p")
     print("Despickleado")
-    train = dataset["train"]
-    val = dataset["val"]
-    test = dataset["test"]
 
     X_train = train["X"]
     X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], X_train.shape[2], 1))
