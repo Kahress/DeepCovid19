@@ -234,7 +234,6 @@ def App1(image, size):
     image = crop_excess(image, size)
     image = image.resize(size, Image.BILINEAR)
     image = image.convert(mode='L')
-
     return image
 
 ############################
@@ -259,11 +258,15 @@ def App2(image):
 def OTSU(image, threshold):
     return image.point(lambda p: p > threshold and p)
 
+########################
+## DATA NORMALIZATION ##
+########################
+
 def Normalization(image):
     stats = ImageStat.Stat(image)
     std = stats.stddev[0]
 
-    return image.point(lambda p: p / std)
+    return image
 
 def CommonApp(image):
     image = OTSU(image, 100)
