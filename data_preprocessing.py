@@ -286,11 +286,11 @@ if __name__ == "__main__":
                     image.show()
                 break
 
-    print("Computing sizes...")
-    min_gen, max_gen, avg_gen = compute_sizes()
+    # print("Computing sizes...")
+    # min_gen, max_gen, avg_gen = compute_sizes()
 
     print("Creating dataset...")
-    create_dataset(transformation=App1, size=avg_gen)
+    create_dataset(transformation=App1, size=(512,512))
     #dataset = create_dataset()
 
     #store_object(dataset, "dataset_app1.p")
