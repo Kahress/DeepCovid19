@@ -125,3 +125,4 @@ dmypy.json
 .pyre/
 chest_xray/
 pickle_files/
+*.p
