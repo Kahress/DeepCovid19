@@ -228,6 +228,18 @@ if __name__ == "__main__":
     test = get_data("test_app1.p")
     print("Unpickled!")
 
+    a = 0
+    i = 0
+    while a != 'q':
+        trainxlist = train['X']
+        trainxarray = trainxlist[i]
+        trainxarray = trainxarray.reshape((512,512))
+        im = Image.fromarray(trainxarray, mode='L')
+        im.show()
+        i += 1
+        a = input()
+    exit()
+
     X_train = train["X"].astype('float32')
     X_train /= 255.0
     X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], X_train.shape[2], 1))
@@ -275,5 +287,5 @@ if __name__ == "__main__":
     
     epochs = 10
     batch_size = 5
-    model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs))
+    model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs), shuffle=False)
     # model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val))

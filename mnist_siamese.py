@@ -9,6 +9,10 @@ from keras.layers import Input, Flatten, Dense, Dropout, Lambda
 from keras.optimizers import RMSprop
 from keras import backend as K
 
+import pickle
+
+from PIL import Image
+
 num_classes = 2
 epochs = 20
 
@@ -36,7 +40,7 @@ def contrastive_loss(y_true, y_pred):
     margin = 1
     square_pred = K.square(y_pred)
     margin_square = K.square(K.maximum(margin - y_pred, 0))
-    return K.mean((1 - y_true) * square_pred + (y_true) * margin_square)
+    return K.mean((y_true) * square_pred + (1 - y_true) * margin_square)
 
 
 def create_pairs(x, digit_indices):
@@ -52,9 +56,12 @@ def create_pairs(x, digit_indices):
             pairs += [[x[z1], x[z2]]]
             inc = random.randrange(1, num_classes)
             dn = (d + inc) % num_classes
-            z1, z2 = digit_indices[d][i], digit_indices[dn][i]
+            if len(digit_indices[d]) -1 == n:
+                z1, z2 = digit_indices[d][i], digit_indices[dn][-i-1]
+            else: 
+                z1, z2 = digit_indices[d][i], digit_indices[dn][i]
             pairs += [[x[z1], x[z2]]]
-            labels += [0, 1]
+            labels += [1, 0]
     return np.array(pairs), np.array(labels)
 
 
@@ -63,11 +70,11 @@ def create_base_network(input_shape):
     '''
     input = Input(shape=input_shape)
     x = Flatten()(input)
-    x = Dense(128, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     x = Dropout(0.1)(x)
-    x = Dense(128, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     x = Dropout(0.1)(x)
-    x = Dense(128, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     return Model(input, x)
 
 
@@ -81,7 +88,7 @@ def compute_accuracy(y_true, y_pred):
 def accuracy(y_true, y_pred):
     '''Compute classification accuracy with a fixed threshold on distances.
     '''
-    return K.mean(K.equal((1 - y_true), K.cast(y_pred < 0.5, y_true.dtype)))
+    return K.mean(K.equal((y_true), K.cast(y_pred < 0.5, y_true.dtype)))
 
 
 # the data, split between train and test sets
@@ -90,6 +97,10 @@ train = get_data("train_app1.p")
 val = get_data("val_app1.p")
 test = get_data("test_app1.p")
 print("Unpickled!")
+
+im = Image.fromarray(train[17,:])
+im.show()
+exit()
 
 x_train = train['X'].astype('float32')
 x_test = test['X'].astype('float32')
@@ -124,9 +135,11 @@ distance = Lambda(euclidean_distance,
 
 model = Model([input_a, input_b], distance)
 
+
 # train
 rms = RMSprop()
 model.compile(loss=contrastive_loss, optimizer=rms, metrics=[accuracy])
+print(model.summary())
 model.fit([tr_pairs[:, 0], tr_pairs[:, 1]], tr_y,
           batch_size=128,
           epochs=epochs,
