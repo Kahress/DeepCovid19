@@ -74,7 +74,7 @@ def get_siamese_model(input_shape):
     model.add(MaxPooling2D())
     model.add(Conv2D(256, (4,4), activation='relu'))
     model.add(Flatten())
-    model.add(Dense(64, activation='sigmoid'))
+    model.add(Dense(4096, activation='sigmoid'))
 
     # because we re-use the same instance `base_network`,
     # the weights of the network
@@ -228,18 +228,6 @@ if __name__ == "__main__":
     test = get_data("test_app1.p")
     print("Unpickled!")
 
-    a = 0
-    i = 0
-    while a != 'q':
-        trainxlist = train['X']
-        trainxarray = trainxlist[i]
-        trainxarray = trainxarray.reshape((512,512))
-        im = Image.fromarray(trainxarray, mode='L')
-        im.show()
-        i += 1
-        a = input()
-    exit()
-
     X_train = train["X"].astype('float32')
     X_train /= 255.0
     X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], X_train.shape[2], 1))
@@ -286,6 +274,6 @@ if __name__ == "__main__":
     print(y_train_pairs.shape)
     
     epochs = 10
-    batch_size = 5
+    batch_size = 64
     model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs), shuffle=False)
     # model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val))
