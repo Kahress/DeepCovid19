@@ -246,34 +246,34 @@ if __name__ == "__main__":
     Y_test = test["Y"].T
     y_test = test["y"]
 
-    # model = get_conv_model((X_train.shape[1], X_train.shape[2], 1))
-    model = get_siamese_model_2((X_train.shape[1], X_train.shape[2], 1))
-    model.compile(optimizer='adam', loss=contrastive_loss, metrics=[accuracy])
+    model = get_conv_model((X_train.shape[1], X_train.shape[2], 1))
+    #model = get_siamese_model_2((X_train.shape[1], X_train.shape[2], 1))
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     model.summary()
 
     
-    recompute_pairs = True
-    if recompute_pairs:
+    # recompute_pairs = True
+    # if recompute_pairs:
 
-        print("Making pairs...")
-        X_train_pairs, y_train_pairs = make_pairs_2(X_train, y_train)
+    #     print("Making pairs...")
+    #     X_train_pairs, y_train_pairs = make_pairs_2(X_train, y_train)
         
-        X_val_pairs, y_val_pairs = make_pairs_2(X_test, y_test)
-        print("Pairs made")
+    #     X_val_pairs, y_val_pairs = make_pairs_2(X_test, y_test)
+    #     print("Pairs made")
         
-        # print("Storing pairs")
-        # store_object((X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs), 'pairs.p')
-        # print("Pairs stored")
+    #     # print("Storing pairs")
+    #     # store_object((X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs), 'pairs.p')
+    #     # print("Pairs stored")
         
-    else:
-        print("Unpickling pairs...")
-        X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs = get_data('pairs.p')
-        print("Pairs unpickled")
+    # else:
+    #     print("Unpickling pairs...")
+    #     X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs = get_data('pairs.p')
+    #     print("Pairs unpickled")
 
-    print(X_train_pairs.shape)
-    print(y_train_pairs.shape)
+    # print(X_train_pairs.shape)
+    # print(y_train_pairs.shape)
     
     epochs = 10
-    batch_size = 64
-    model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs), shuffle=False)
-    # model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val))
+    batch_size = 2
+    #model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs), shuffle=False)
+    model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val))
