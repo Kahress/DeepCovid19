@@ -128,3 +128,6 @@ pickle_files/
 *.p
 .vscode/settings.json
 covid-chestxray-dataset-master/
+*.txt
+*.hdf5
+*.zip
