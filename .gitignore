@@ -127,3 +127,4 @@ chest_xray/
 pickle_files/
 *.p
 .vscode/settings.json
+covid-chestxray-dataset-master/

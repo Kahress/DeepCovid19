@@ -2,11 +2,13 @@ import numpy as np
 
 import keras
 from keras.models import Sequential, Model
-from keras.layers import Dense, Conv2D, MaxPooling2D, Input, Flatten, Lambda, Dropout, concatenate
+from keras.layers import Dense, Conv2D, MaxPooling2D, Input, Flatten, Lambda, Dropout, concatenate, BatchNormalization, Dropout
 from keras.optimizers import RMSprop
 from keras import backend as K
 import tensorflow as tf
 import random
+from sklearn.utils import class_weight
+from keras.models import load_model
 
 
 from PIL import Image
@@ -108,10 +110,13 @@ def get_siamese_model_2(input_shape):
     model = Sequential()
     model.add(Conv2D(64, (10,10), activation='relu'))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Conv2D(128, (7,7), activation='relu'))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Conv2D(128, (4,4), activation='relu'))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Conv2D(256, (4,4), activation='relu'))
     model.add(Flatten())
     model.add(Dense(64, activation='relu'))
@@ -125,7 +130,7 @@ def get_siamese_model_2(input_shape):
     L1_distance = L1_layer([encoded_l, encoded_r])
     
     # Add a dense layer with a sigmoid unit to generate the similarity score
-    prediction = Dense(1,activation='softmax')(L1_distance)
+    prediction = Dense(1,activation='sigmoid')(L1_distance)
 
     # Connect the inputs with the outputs
     siamese_net = Model(inputs=[left_input,right_input], outputs=prediction)
@@ -142,12 +147,16 @@ def get_conv_model(input_shape):
     model = Sequential()
     model.add(Conv2D(64, (10,10), activation='relu', input_shape=input_shape))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Conv2D(128, (7,7), activation='relu'))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Conv2D(128, (4,4), activation='relu'))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Conv2D(256, (4,4), activation='relu'))
     model.add(MaxPooling2D())
+    model.add(BatchNormalization())
     model.add(Flatten())
     model.add(Dense(64, activation='relu'))
     model.add(Dense(2 ,activation='softmax'))
@@ -218,7 +227,35 @@ def make_pairs_2(X, Y):
 def accuracy(y_true, y_pred):
     '''Compute classification accuracy with a fixed threshold on distances.
     '''
-    return K.mean(K.equal((1 - y_true), K.cast(y_pred < 0.5, y_true.dtype)))
+    return K.mean(K.equal(y_true, K.cast(y_pred >= 0.5, y_true.dtype)))
+
+class ResultsStore(keras.callbacks.Callback):
+
+    def on_train_begin(self, logs={}):
+        self.losses = []
+        self.accuracies = []
+
+    def on_batch_end(self, batch, logs={}):
+        loss = logs["loss"]
+        accuracy = logs["accuracy"]
+        with open('BestTrainValuesRetrained.txt', 'a') as f:
+            txt = str(batch) + '\t\t' + str(loss) + '\t\t' + str(accuracy) + '\n'
+            f.write(txt)
+
+    def on_epoch_end(self, epoch, logs={}):
+        if epoch == 4:
+            self.model.save("model_conv.hdf5")
+
+        loss = logs["val_loss"]
+        accuracy = logs["val_accuracy"]
+        with open('BestValValuesRetrained.txt', 'a') as f:
+            txt = str(epoch) + '\t\t' + str(loss) + '\t\t' + str(accuracy) + '\n'
+            f.write(txt)
+
+class StoreModel(keras.callbacks.Callback):
+
+    def on_epoch_end(self, epoch, logs={}):
+        self.model.save("model_conv_retrained.hdf5")
 
 if __name__ == "__main__":
 
@@ -246,34 +283,67 @@ if __name__ == "__main__":
     Y_test = test["Y"].T
     y_test = test["y"]
 
+    '''
+    recompute_pairs = False
+    if recompute_pairs:
+
+        print("Making pairs...")
+        X_train_pairs, y_train_pairs = make_pairs_2(X_train, y_train)
+        
+        X_val_pairs, y_val_pairs = make_pairs_2(X_test, y_test)
+        print("Pairs made")
+        
+        print("Storing pairs")
+        store_object((X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs), 'pairs.p')
+        print("Pairs stored")
+        
+    else:
+        print("Unpickling pairs...")
+        X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs = get_data('pairs.p')
+        print("Pairs unpickled")
+    '''
+
+    #print(X_train_pairs.shape)
+    #print(y_train_pairs.shape)
+
+    # learning_rates = [1e-1, 1e-3, 1e-5, 1e-7]
+    # learning_rates = []
+    # l_min = -3
+    # l_max = -1
+    # for i in range(5):
+    #     l = l_min + (l_max - l_min)*random.random()
+    #     lamda = 10**l
+    #     learning_rates.append(l)
+    
+    # Best learning rate
+    eta = 0.016896365756722063
+    
+    # for eta in learning_rates:
+    
     model = get_conv_model((X_train.shape[1], X_train.shape[2], 1))
     #model = get_siamese_model_2((X_train.shape[1], X_train.shape[2], 1))
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    opt = keras.optimizers.Adagrad(learning_rate=eta)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    # model.compile(optimizer='adagrad', loss=contrastive_loss, metrics=[accuracy])
     model.summary()
 
-    
-    # recompute_pairs = True
-    # if recompute_pairs:
+    # model = load_model("model_conv.hdf5")
 
-    #     print("Making pairs...")
-    #     X_train_pairs, y_train_pairs = make_pairs_2(X_train, y_train)
-        
-    #     X_val_pairs, y_val_pairs = make_pairs_2(X_test, y_test)
-    #     print("Pairs made")
-        
-    #     # print("Storing pairs")
-    #     # store_object((X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs), 'pairs.p')
-    #     # print("Pairs stored")
-        
-    # else:
-    #     print("Unpickling pairs...")
-    #     X_train_pairs, y_train_pairs, X_val_pairs, y_val_pairs = get_data('pairs.p')
-    #     print("Pairs unpickled")
-
-    # print(X_train_pairs.shape)
-    # print(y_train_pairs.shape)
+    epochs = 100
+    batch_size = 8
+    # storeCallback = StoreModel()
+    resultsCallback = ResultsStore()
+    # resultsCallback.eta = eta
     
-    epochs = 10
-    batch_size = 2
-    #model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs), shuffle=False)
-    model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val, Y_val))
+    sw = class_weight.compute_sample_weight('balanced', y_train)
+    sw_val = class_weight.compute_sample_weight('balanced', y_test)
+    print(sw)
+    print(sw_val)
+    #model.fit([X_train_pairs[:,0], X_train_pairs[:,1]], y_train_pairs, epochs=epochs, batch_size=batch_size, validation_data=([X_val_pairs[:,0], X_val_pairs[:,1]], y_val_pairs), shuffle=False, callbacks=[resultsCallback])
+    model.fit(X_train, Y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, Y_test, sw_val), sample_weight=sw, callbacks=[resultsCallback])
+    model.save("model_conv_retrained.hdf5")
+
+    # results = model.evaluate(X_test, Y_test)
+    # print(results)
+
+    # del model
